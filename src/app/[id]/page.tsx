@@ -85,7 +85,7 @@ export default function RecordDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header title={record.name} showBack />
+      <Header title={record.name || "（名称未入力）"} showBack />
 
       <main className="max-w-lg mx-auto">
         {record.photo && (
@@ -98,7 +98,13 @@ export default function RecordDetailPage() {
 
         <div className="px-4 py-4 flex flex-col gap-4">
           <div>
-            <h2 className="text-xl font-bold">{record.name}</h2>
+            <h2 className="text-xl font-bold">
+              {record.name || (
+                <span className="text-gray-400 dark:text-gray-500">
+                  （名称未入力）
+                </span>
+              )}
+            </h2>
             <StarRating value={record.rating} size="sm" />
           </div>
 
