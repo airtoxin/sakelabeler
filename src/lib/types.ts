@@ -1,7 +1,12 @@
+export type SakePhoto = {
+  url: string;
+  isCover: boolean;
+};
+
 export type SakeRecord = {
   id: string;
   name: string;
-  photo: string | null;
+  photos: SakePhoto[];
   restaurant: string;
   origin: string;
   date: string;
@@ -12,6 +17,12 @@ export type SakeRecord = {
 };
 
 export type SakeRecordInput = Omit<SakeRecord, "id" | "createdAt" | "updatedAt">;
+
+export function getCoverPhoto(photos: SakePhoto[]): string | null {
+  if (photos.length === 0) return null;
+  const cover = photos.find((p) => p.isCover);
+  return cover ? cover.url : photos[0].url;
+}
 
 export interface SakeStorage {
   getAll(): Promise<SakeRecord[]>;

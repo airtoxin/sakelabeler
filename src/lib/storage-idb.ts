@@ -2,15 +2,33 @@ import { openDB, type IDBPDatabase } from "idb";
 import type { SakeRecord, SakeRecordInput, SakeStorage } from "./types";
 
 const DB_NAME = "sakelabeler";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "records";
 
 function getDB(): Promise<IDBPDatabase> {
   return openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
+    upgrade(db, oldVersion, _newVersion, transaction) {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
         store.createIndex("createdAt", "createdAt");
+      }
+
+      // Migrate photo -> photos
+      if (oldVersion < 2) {
+        const store = transaction.objectStore(STORE_NAME);
+        store.openCursor().then(function iterate(cursor): Promise<void> | void {
+          if (!cursor) return;
+          const record = cursor.value;
+          if ("photo" in record && !("photos" in record)) {
+            const photos = record.photo
+              ? [{ url: record.photo, isCover: true }]
+              : [];
+            delete record.photo;
+            record.photos = photos;
+            cursor.update(record);
+          }
+          return cursor.continue().then(iterate);
+        });
       }
     },
   });
