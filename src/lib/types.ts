@@ -3,10 +3,14 @@ export type SakePhoto = {
   isCover: boolean;
 };
 
+export type AlcoholType = "nihonshu" | "beer" | "wine" | "shochu" | "whiskey" | "";
+
 export type SakeRecord = {
   id: string;
   name: string;
   photos: SakePhoto[];
+  alcoholType: AlcoholType;
+  tags: string[];
   restaurant: string;
   origin: string;
   date: string;

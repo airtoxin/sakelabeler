@@ -4,6 +4,7 @@ import Link from "next/link";
 import { StarRating } from "./StarRating";
 import { formatDate } from "@/lib/utils";
 import { getCoverPhoto } from "@/lib/types";
+import { getAlcoholTypeConfig } from "@/lib/alcohol-types";
 import type { SakeRecord } from "@/lib/types";
 
 type SakeCardProps = {
@@ -12,6 +13,7 @@ type SakeCardProps = {
 
 export function SakeCard({ record }: SakeCardProps) {
   const coverPhoto = getCoverPhoto(record.photos);
+  const typeConfig = record.alcoholType ? getAlcoholTypeConfig(record.alcoholType) : undefined;
 
   return (
     <Link
@@ -46,19 +48,43 @@ export function SakeCard({ record }: SakeCardProps) {
           </div>
         )}
         <div className="flex-1 p-3 min-w-0">
-          <h3 className="font-bold text-base truncate">
-            {record.name || (
-              <span className="text-gray-400 dark:text-gray-500">
-                （名称未入力）
+          <div className="flex items-center gap-1.5">
+            <h3 className="font-bold text-base truncate">
+              {record.name || (
+                <span className="text-gray-400 dark:text-gray-500">
+                  （名称未入力）
+                </span>
+              )}
+            </h3>
+            {typeConfig && (
+              <span className={`flex-shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${typeConfig.color}`}>
+                {typeConfig.label}
               </span>
             )}
-          </h3>
-          {record.restaurant && (
+          </div>
+          {record.tags && record.tags.length > 0 && (
+            <div className="flex gap-1 mt-0.5 overflow-hidden">
+              {record.tags.slice(0, 3).map((tag) => (
+                <span
+                  key={tag}
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] border ${typeConfig ? typeConfig.color : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"}`}
+                >
+                  {tag}
+                </span>
+              ))}
+              {record.tags.length > 3 && (
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 self-center">
+                  +{record.tags.length - 3}
+                </span>
+              )}
+            </div>
+          )}
+          {!record.tags?.length && record.restaurant && (
             <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">
               {record.restaurant}
             </p>
           )}
-          <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center justify-between mt-1">
             <StarRating value={record.rating} size="sm" />
             <span className="text-xs text-gray-400 dark:text-gray-500">
               {formatDate(record.date)}

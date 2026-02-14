@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { storage } from "@/lib/storage";
 import { formatDate } from "@/lib/utils";
 import { getCoverPhoto } from "@/lib/types";
+import { getAlcoholTypeConfig } from "@/lib/alcohol-types";
 import type { SakeRecord, SakeRecordInput } from "@/lib/types";
 
 export default function RecordDetailPage() {
@@ -117,14 +118,39 @@ export default function RecordDetailPage() {
 
         <div className="px-4 py-4 flex flex-col gap-4">
           <div>
-            <h2 className="text-xl font-bold">
-              {record.name || (
-                <span className="text-gray-400 dark:text-gray-500">
-                  （名称未入力）
-                </span>
-              )}
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold">
+                {record.name || (
+                  <span className="text-gray-400 dark:text-gray-500">
+                    （名称未入力）
+                  </span>
+                )}
+              </h2>
+              {record.alcoholType && (() => {
+                const typeConfig = getAlcoholTypeConfig(record.alcoholType);
+                return typeConfig ? (
+                  <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium border ${typeConfig.color}`}>
+                    {typeConfig.label}
+                  </span>
+                ) : null;
+              })()}
+            </div>
             <StarRating value={record.rating} size="sm" />
+            {record.tags && record.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {record.tags.map((tag) => {
+                  const typeConfig = record.alcoholType ? getAlcoholTypeConfig(record.alcoholType) : undefined;
+                  return (
+                    <span
+                      key={tag}
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium border ${typeConfig ? typeConfig.color : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"}`}
+                    >
+                      {tag}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-2 text-sm">
