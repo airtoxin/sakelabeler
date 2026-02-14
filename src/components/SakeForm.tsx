@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PhotoPicker } from "./PhotoPicker";
 import { StarRating } from "./StarRating";
 import { todayString } from "@/lib/utils";
-import type { SakeRecordInput } from "@/lib/types";
+import type { SakeRecordInput, SakePhoto } from "@/lib/types";
 
 type SakeFormProps = {
   initialValues?: Partial<SakeRecordInput>;
@@ -18,8 +18,8 @@ export function SakeForm({
   submitLabel = "保存する",
 }: SakeFormProps) {
   const [name, setName] = useState(initialValues?.name ?? "");
-  const [photo, setPhoto] = useState<string | null>(
-    initialValues?.photo ?? null
+  const [photos, setPhotos] = useState<SakePhoto[]>(
+    initialValues?.photos ?? []
   );
   const [restaurant, setRestaurant] = useState(
     initialValues?.restaurant ?? ""
@@ -31,7 +31,7 @@ export function SakeForm({
   const [submitting, setSubmitting] = useState(false);
 
   const hasAnyInput =
-    name.trim() || photo || restaurant.trim() || origin.trim() || memo.trim();
+    name.trim() || photos.length > 0 || restaurant.trim() || origin.trim() || memo.trim();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +40,7 @@ export function SakeForm({
     try {
       await onSubmit({
         name: name.trim(),
-        photo,
+        photos,
         restaurant: restaurant.trim(),
         origin: origin.trim(),
         date,
@@ -54,7 +54,7 @@ export function SakeForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <PhotoPicker value={photo} onChange={setPhoto} />
+      <PhotoPicker value={photos} onChange={setPhotos} />
 
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">お酒の名前</span>

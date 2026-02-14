@@ -8,6 +8,7 @@ import { StarRating } from "@/components/StarRating";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { storage } from "@/lib/storage";
 import { formatDate } from "@/lib/utils";
+import { getCoverPhoto } from "@/lib/types";
 import type { SakeRecord, SakeRecordInput } from "@/lib/types";
 
 export default function RecordDetailPage() {
@@ -88,12 +89,30 @@ export default function RecordDetailPage() {
       <Header title={record.name || "（名称未入力）"} showBack />
 
       <main className="max-w-lg mx-auto">
-        {record.photo && (
-          <img
-            src={record.photo}
-            alt={record.name}
-            className="w-full h-64 object-cover"
-          />
+        {record.photos.length > 0 && (
+          <div>
+            <img
+              src={getCoverPhoto(record.photos)!}
+              alt={record.name}
+              className="w-full h-64 object-cover"
+            />
+            {record.photos.length > 1 && (
+              <div className="flex gap-1.5 px-4 py-2 overflow-x-auto bg-gray-50 dark:bg-gray-900">
+                {record.photos.map((photo, index) => (
+                  <img
+                    key={index}
+                    src={photo.url}
+                    alt={`写真 ${index + 1}`}
+                    className={`w-14 h-14 object-cover rounded-md flex-shrink-0 ${
+                      photo.isCover
+                        ? "ring-2 ring-violet-500"
+                        : "opacity-70"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         <div className="px-4 py-4 flex flex-col gap-4">
