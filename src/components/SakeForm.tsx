@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { PhotoPicker } from "./PhotoPicker";
 import { StarRating } from "./StarRating";
+import { FlavorTagPicker } from "./FlavorTagPicker";
 import { todayString } from "@/lib/utils";
-import type { SakeRecordInput, SakePhoto } from "@/lib/types";
+import type { SakeRecordInput, SakePhoto, AlcoholType } from "@/lib/types";
 
 type SakeFormProps = {
   initialValues?: Partial<SakeRecordInput>;
@@ -21,6 +22,10 @@ export function SakeForm({
   const [photos, setPhotos] = useState<SakePhoto[]>(
     initialValues?.photos ?? []
   );
+  const [alcoholType, setAlcoholType] = useState<AlcoholType>(
+    initialValues?.alcoholType ?? ""
+  );
+  const [tags, setTags] = useState<string[]>(initialValues?.tags ?? []);
   const [restaurant, setRestaurant] = useState(
     initialValues?.restaurant ?? ""
   );
@@ -41,6 +46,8 @@ export function SakeForm({
       await onSubmit({
         name: name.trim(),
         photos,
+        alcoholType,
+        tags,
         restaurant: restaurant.trim(),
         origin: origin.trim(),
         date,
@@ -55,6 +62,13 @@ export function SakeForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <PhotoPicker value={photos} onChange={setPhotos} />
+
+      <FlavorTagPicker
+        alcoholType={alcoholType}
+        onAlcoholTypeChange={setAlcoholType}
+        selectedTags={tags}
+        onTagsChange={setTags}
+      />
 
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">お酒の名前</span>

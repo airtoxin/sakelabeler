@@ -2,7 +2,7 @@ import { openDB, type IDBPDatabase } from "idb";
 import type { SakeRecord, SakeRecordInput, SakeStorage } from "./types";
 
 const DB_NAME = "sakelabeler";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_NAME = "records";
 
 function getDB(): Promise<IDBPDatabase> {
@@ -27,6 +27,26 @@ function getDB(): Promise<IDBPDatabase> {
             record.photos = photos;
             cursor.update(record);
           }
+          return cursor.continue().then(iterate);
+        });
+      }
+
+      // Add alcoholType and tags fields
+      if (oldVersion < 3) {
+        const store = transaction.objectStore(STORE_NAME);
+        store.openCursor().then(function iterate(cursor): Promise<void> | void {
+          if (!cursor) return;
+          const record = cursor.value;
+          let changed = false;
+          if (!("alcoholType" in record)) {
+            record.alcoholType = "";
+            changed = true;
+          }
+          if (!("tags" in record)) {
+            record.tags = [];
+            changed = true;
+          }
+          if (changed) cursor.update(record);
           return cursor.continue().then(iterate);
         });
       }
