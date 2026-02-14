@@ -26,7 +26,13 @@ export function SakeCard({ record }: SakeCardProps) {
           </div>
         )}
         <div className="flex-1 p-3 min-w-0">
-          <h3 className="font-bold text-base truncate">{record.name}</h3>
+          <h3 className="font-bold text-base truncate">
+            {record.name || (
+              <span className="text-gray-400 dark:text-gray-500">
+                （名称未入力）
+              </span>
+            )}
+          </h3>
           {record.restaurant && (
             <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">
               {record.restaurant}

@@ -30,9 +30,12 @@ export function SakeForm({
   const [memo, setMemo] = useState(initialValues?.memo ?? "");
   const [submitting, setSubmitting] = useState(false);
 
+  const hasAnyInput =
+    name.trim() || photo || restaurant.trim() || origin.trim() || memo.trim();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || submitting) return;
+    if (!hasAnyInput || submitting) return;
     setSubmitting(true);
     try {
       await onSubmit({
@@ -54,15 +57,12 @@ export function SakeForm({
       <PhotoPicker value={photo} onChange={setPhoto} />
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium">
-          お酒の名前 <span className="text-red-500">*</span>
-        </span>
+        <span className="text-sm font-medium">お酒の名前</span>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="例：獺祭 純米大吟醸"
-          required
           className="px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
         />
       </label>
@@ -117,7 +117,7 @@ export function SakeForm({
 
       <button
         type="submit"
-        disabled={!name.trim() || submitting}
+        disabled={!hasAnyInput || submitting}
         className="mt-2 py-3 rounded-lg bg-violet-600 text-white font-medium hover:bg-violet-700 active:bg-violet-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {submitting ? "保存中..." : submitLabel}
