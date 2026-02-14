@@ -1,7 +1,7 @@
 export type SakeRecord = {
   id: string;
   name: string;
-  photo: string | null;
+  photos: string[];
   restaurant: string;
   origin: string;
   date: string;

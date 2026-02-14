@@ -88,12 +88,17 @@ export default function RecordDetailPage() {
       <Header title={record.name || "（名称未入力）"} showBack />
 
       <main className="max-w-lg mx-auto">
-        {record.photo && (
-          <img
-            src={record.photo}
-            alt={record.name}
-            className="w-full h-64 object-cover"
-          />
+        {record.photos.length > 0 && (
+          <div className="flex overflow-x-auto snap-x snap-mandatory">
+            {record.photos.map((photo, index) => (
+              <img
+                key={index}
+                src={photo}
+                alt={`${record.name || "お酒"} ${index + 1}`}
+                className="w-full h-64 object-cover flex-shrink-0 snap-center"
+              />
+            ))}
+          </div>
         )}
 
         <div className="px-4 py-4 flex flex-col gap-4">

@@ -16,10 +16,10 @@ export function SakeCard({ record }: SakeCardProps) {
       className="block bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden active:scale-[0.98] transition-transform"
     >
       <div className="flex">
-        {record.photo && (
+        {record.photos.length > 0 && (
           <div className="w-24 h-24 flex-shrink-0">
             <img
-              src={record.photo}
+              src={record.photos[0]}
               alt={record.name}
               className="w-full h-full object-cover"
             />

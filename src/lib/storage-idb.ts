@@ -5,6 +5,15 @@ const DB_NAME = "sakelabeler";
 const DB_VERSION = 1;
 const STORE_NAME = "records";
 
+// Migrate old records that have `photo: string | null` to `photos: string[]`
+function normalizeRecord(raw: Record<string, unknown>): SakeRecord {
+  if (!("photos" in raw) && "photo" in raw) {
+    const { photo, ...rest } = raw;
+    return { ...rest, photos: photo ? [photo as string] : [] } as SakeRecord;
+  }
+  return raw as SakeRecord;
+}
+
 function getDB(): Promise<IDBPDatabase> {
   return openDB(DB_NAME, DB_VERSION, {
     upgrade(db) {
@@ -20,7 +29,7 @@ export class IDBSakeStorage implements SakeStorage {
   async getAll(): Promise<SakeRecord[]> {
     const db = await getDB();
     const records = await db.getAll(STORE_NAME);
-    return records.sort(
+    return records.map(normalizeRecord).sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
@@ -29,7 +38,7 @@ export class IDBSakeStorage implements SakeStorage {
   async getById(id: string): Promise<SakeRecord | null> {
     const db = await getDB();
     const record = await db.get(STORE_NAME, id);
-    return record ?? null;
+    return record ? normalizeRecord(record) : null;
   }
 
   async create(input: SakeRecordInput): Promise<SakeRecord> {
