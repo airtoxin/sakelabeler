@@ -1,17 +1,34 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { SakeCard } from "@/components/SakeCard";
+import { RatingFilter } from "@/components/RatingFilter";
 import { EmptyState } from "@/components/EmptyState";
 import { useSakeRecords } from "@/hooks/useSakeRecords";
 
 export default function HomePage() {
   const { records, loading } = useSakeRecords();
+  const [selectedRatings, setSelectedRatings] = useState<Set<number>>(
+    new Set()
+  );
+
+  const filteredRecords = useMemo(() => {
+    if (selectedRatings.size === 0) return records;
+    return records.filter((r) => selectedRatings.has(r.rating));
+  }, [records, selectedRatings]);
 
   return (
     <div className="min-h-screen bg-background">
       <Header title="さけラベラー" />
+
+      {!loading && records.length > 0 && (
+        <RatingFilter
+          selectedRatings={selectedRatings}
+          onChange={setSelectedRatings}
+        />
+      )}
 
       <main className="px-4 py-4 pb-24 max-w-lg mx-auto">
         {loading ? (
@@ -20,9 +37,13 @@ export default function HomePage() {
           </div>
         ) : records.length === 0 ? (
           <EmptyState />
+        ) : filteredRecords.length === 0 ? (
+          <div className="text-center py-16 text-gray-400 dark:text-gray-500 text-sm">
+            該当する記録がありません
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {records.map((record) => (
+            {filteredRecords.map((record) => (
               <SakeCard key={record.id} record={record} />
             ))}
           </div>
