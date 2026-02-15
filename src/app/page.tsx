@@ -18,8 +18,10 @@ export default function HomePage() {
   const [selectedTypes, setSelectedTypes] = useState<Set<AlcoholType>>(
     new Set()
   );
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
 
-  const hasFilter = selectedRatings.size > 0 || selectedTypes.size > 0;
+  const hasFilter =
+    selectedRatings.size > 0 || selectedTypes.size > 0 || selectedTags.size > 0;
 
   const filteredRecords = useMemo(() => {
     let result = records;
@@ -29,12 +31,18 @@ export default function HomePage() {
     if (selectedTypes.size > 0) {
       result = result.filter((r) => r.alcoholType && selectedTypes.has(r.alcoholType));
     }
+    if (selectedTags.size > 0) {
+      result = result.filter((r) =>
+        r.tags.some((tag) => selectedTags.has(tag))
+      );
+    }
     return result;
-  }, [records, selectedRatings, selectedTypes]);
+  }, [records, selectedRatings, selectedTypes, selectedTags]);
 
   const clearAll = () => {
     setSelectedRatings(new Set());
     setSelectedTypes(new Set());
+    setSelectedTags(new Set());
   };
 
   return (
@@ -43,13 +51,25 @@ export default function HomePage() {
 
       {!loading && records.length > 0 && (
         <div className="flex items-start gap-2 px-4 py-2 max-w-lg mx-auto">
-          <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0 pt-1">
-            絞り込み
-          </span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0 mt-1"
+            aria-hidden="true"
+          >
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
           <div className="flex flex-col gap-1.5 flex-1">
             <AlcoholTypeFilter
               selectedTypes={selectedTypes}
               onChange={setSelectedTypes}
+              selectedTags={selectedTags}
+              onTagsChange={setSelectedTags}
             />
             <RatingFilter
               selectedRatings={selectedRatings}
