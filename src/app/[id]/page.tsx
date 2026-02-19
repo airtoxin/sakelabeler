@@ -9,8 +9,8 @@ import { StarRating } from "@/components/StarRating";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { storage } from "@/lib/storage";
 import { formatDate } from "@/lib/utils";
-import { getCoverPhoto } from "@/lib/types";
 import { getAlcoholTypeConfig } from "@/lib/alcohol-types";
+import { PhotoCarousel } from "@/components/PhotoCarousel";
 import { reverseGeocode } from "@/lib/geocoding";
 import type { SakeRecord, SakeRecordInput } from "@/lib/types";
 
@@ -110,31 +110,9 @@ export default function RecordDetailPage() {
     <div className="min-h-screen bg-background">
       <Header title={record.name || "（名称未入力）"} showBack />
 
-      <main className="max-w-lg mx-auto">
+      <main className="max-w-lg mx-auto relative z-0">
         {record.photos.length > 0 && (
-          <div>
-            <img
-              src={getCoverPhoto(record.photos)!}
-              alt={record.name}
-              className="w-full h-64 object-cover"
-            />
-            {record.photos.length > 1 && (
-              <div className="flex gap-1.5 px-4 py-2 overflow-x-auto bg-gray-50 dark:bg-gray-900">
-                {record.photos.map((photo, index) => (
-                  <img
-                    key={index}
-                    src={photo.url}
-                    alt={`写真 ${index + 1}`}
-                    className={`w-14 h-14 object-cover rounded-md flex-shrink-0 ${
-                      photo.isCover
-                        ? "ring-2 ring-violet-500"
-                        : "opacity-70"
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          <PhotoCarousel photos={record.photos} alt={record.name || "お酒の写真"} />
         )}
 
         <div className="px-4 py-4 flex flex-col gap-4">
