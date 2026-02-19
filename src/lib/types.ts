@@ -1,6 +1,7 @@
 export type SakePhoto = {
   url: string;
   isCover: boolean;
+  gpsLocation?: Location;
 };
 
 export type AlcoholType = "nihonshu" | "beer" | "wine" | "shochu" | "whiskey" | "";
