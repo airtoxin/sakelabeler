@@ -143,7 +143,7 @@ export function PhotoCarousel({ photos, alt }: PhotoCarouselProps) {
         <img
           src={photos[0].url}
           alt={alt}
-          className="w-full h-64 object-cover"
+          className="w-full max-h-96 object-contain bg-gray-100 dark:bg-gray-800"
         />
       </div>
     ) : null;
@@ -156,7 +156,7 @@ export function PhotoCarousel({ photos, alt }: PhotoCarouselProps) {
       {/* Carousel viewport */}
       <div
         ref={containerRef}
-        className="relative w-full h-64 overflow-hidden select-none"
+        className="relative w-full h-96 overflow-hidden select-none bg-gray-100 dark:bg-gray-800"
         role="region"
         aria-roledescription="carousel"
         aria-label="写真"
@@ -186,7 +186,7 @@ export function PhotoCarousel({ photos, alt }: PhotoCarouselProps) {
               key={index}
               src={photo.url}
               alt={`${alt} - 写真 ${index + 1}`}
-              className="w-full h-64 object-cover flex-shrink-0"
+              className="w-full h-96 object-contain flex-shrink-0"
               draggable={false}
             />
           ))}
