@@ -19,6 +19,7 @@ export type SakeRecord = {
   restaurant: string;
   origin: string;
   location: Location | null;
+  locationText: string | null;
   date: string;
   rating: number;
   memo: string;

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { PhotoPicker } from "./PhotoPicker";
 import { StarRating } from "./StarRating";
 import { FlavorTagPicker } from "./FlavorTagPicker";
 import { LocationPicker } from "./LocationPicker";
 import { todayString } from "@/lib/utils";
+import { reverseGeocode } from "@/lib/geocoding";
 import type { SakeRecordInput, SakePhoto, AlcoholType, Location } from "@/lib/types";
 
 type SakeFormProps = {
@@ -34,6 +35,22 @@ export function SakeForm({
   const [location, setLocation] = useState<Location | null>(
     initialValues?.location ?? null
   );
+  const [locationText, setLocationText] = useState<string | null>(
+    initialValues?.locationText ?? null
+  );
+
+  const handleLocationChange = useCallback(
+    async (newLocation: Location | null) => {
+      setLocation(newLocation);
+      if (newLocation) {
+        const text = await reverseGeocode(newLocation);
+        setLocationText(text);
+      } else {
+        setLocationText(null);
+      }
+    },
+    []
+  );
   const [date, setDate] = useState(initialValues?.date ?? todayString());
   const [rating, setRating] = useState(initialValues?.rating ?? 3);
   const [memo, setMemo] = useState(initialValues?.memo ?? "");
@@ -55,6 +72,7 @@ export function SakeForm({
         restaurant: restaurant.trim(),
         origin: origin.trim(),
         location,
+        locationText,
         date,
         rating,
         memo: memo.trim(),
@@ -97,7 +115,7 @@ export function SakeForm({
         />
       </label>
 
-      <LocationPicker value={location} onChange={setLocation} />
+      <LocationPicker value={location} locationText={locationText} onChange={handleLocationChange} />
 
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">産地</span>
