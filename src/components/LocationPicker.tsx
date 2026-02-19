@@ -15,10 +15,11 @@ const LocationMap = dynamic(() => import("./LocationMap"), {
 
 type LocationPickerProps = {
   value: Location | null;
+  locationText?: string | null;
   onChange: (location: Location | null) => void;
 };
 
-export function LocationPicker({ value, onChange }: LocationPickerProps) {
+export function LocationPicker({ value, locationText, onChange }: LocationPickerProps) {
   const [mapOpen, setMapOpen] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -80,7 +81,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
           </div>
           <div className="px-3 py-2 flex items-center justify-between bg-white dark:bg-gray-800">
             <span className="text-xs text-gray-500 dark:text-gray-400">
-              {value.lat.toFixed(6)}, {value.lng.toFixed(6)}
+              {locationText || `${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}`}
             </span>
             <div className="flex gap-2">
               <button

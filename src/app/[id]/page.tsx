@@ -11,6 +11,7 @@ import { storage } from "@/lib/storage";
 import { formatDate } from "@/lib/utils";
 import { getCoverPhoto } from "@/lib/types";
 import { getAlcoholTypeConfig } from "@/lib/alcohol-types";
+import { reverseGeocode } from "@/lib/geocoding";
 import type { SakeRecord, SakeRecordInput } from "@/lib/types";
 
 const LocationMap = dynamic(() => import("@/components/LocationMap"), {
@@ -36,6 +37,18 @@ export default function RecordDetailPage() {
       setLoading(false);
     });
   }, [id]);
+
+  useEffect(() => {
+    if (record && record.location && !record.locationText) {
+      reverseGeocode(record.location).then((text) => {
+        if (text) {
+          storage.update(record.id, { locationText: text }).then((updated) => {
+            setRecord(updated);
+          });
+        }
+      });
+    }
+  }, [record?.id, record?.location, record?.locationText]);
 
   const handleUpdate = async (values: SakeRecordInput) => {
     await storage.update(id, values);
@@ -192,10 +205,15 @@ export default function RecordDetailPage() {
                 <span className="text-gray-400 dark:text-gray-500 w-12 flex-shrink-0">
                   場所
                 </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {record.location.lat.toFixed(6)},{" "}
-                  {record.location.lng.toFixed(6)}
-                </span>
+                <div className="flex flex-col">
+                  {record.locationText && (
+                    <span>{record.locationText}</span>
+                  )}
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    {record.location.lat.toFixed(6)},{" "}
+                    {record.location.lng.toFixed(6)}
+                  </span>
+                </div>
               </div>
               <div className="h-32 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
                 <LocationMap
