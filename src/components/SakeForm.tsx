@@ -97,6 +97,8 @@ export function SakeForm({
         />
       </label>
 
+      <LocationPicker value={location} onChange={setLocation} />
+
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">産地</span>
         <input
@@ -107,8 +109,6 @@ export function SakeForm({
           className="px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
         />
       </label>
-
-      <LocationPicker value={location} onChange={setLocation} />
 
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">日付</span>
