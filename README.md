@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# さけラベラー
 
-## Getting Started
+飲食店で飲んだお酒を記録・管理するWebアプリケーション。
 
-First, run the development server:
+## 機能
+
+- お酒の銘柄、写真、飲食店名、産地、日付、メモを記録
+- 5段階の評価
+- 酒種別の分類（日本酒・ビール・ワイン・焼酎・ウイスキー）と風味タグ付け
+- 位置情報の記録と地図表示
+- 酒種別・評価・タグによるフィルタリング
+- 複数写真の管理とカバー写真の選択
+- ダークモード対応
+- PWA対応（スタンドアロンモード）
+
+## 技術スタック
+
+- [Next.js](https://nextjs.org/) 16 (App Router)
+- [React](https://react.dev/) 19
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/) 4
+- [Leaflet](https://leafletjs.com/) + [react-leaflet](https://react-leaflet.js.org/) (地図)
+- [idb](https://github.com/jakearchibald/idb) (IndexedDB)
+
+## セットアップ
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 開発
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+[http://localhost:3000](http://localhost:3000) をブラウザで開く。
 
-## Learn More
+## ビルド
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm build
+pnpm start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## リント
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm lint
+```
