@@ -51,6 +51,15 @@ export function SakeForm({
     },
     []
   );
+  const handlePhotoLocationExtracted = useCallback(
+    (extractedLocation: Location) => {
+      if (!location) {
+        handleLocationChange(extractedLocation);
+      }
+    },
+    [location, handleLocationChange]
+  );
+
   const [date, setDate] = useState(initialValues?.date ?? todayString());
   const [rating, setRating] = useState(initialValues?.rating ?? 3);
   const [memo, setMemo] = useState(initialValues?.memo ?? "");
@@ -84,7 +93,7 @@ export function SakeForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <PhotoPicker value={photos} onChange={setPhotos} />
+      <PhotoPicker value={photos} onChange={setPhotos} onLocationExtracted={handlePhotoLocationExtracted} />
 
       <FlavorTagPicker
         alcoholType={alcoholType}

@@ -2,20 +2,31 @@
 
 import { useRef } from "react";
 import { resizeImage } from "@/lib/utils";
-import type { SakePhoto } from "@/lib/types";
+import { extractGpsLocation } from "@/lib/exif";
+import type { SakePhoto, Location } from "@/lib/types";
 
 type PhotoPickerProps = {
   value: SakePhoto[];
   onChange: (photos: SakePhoto[]) => void;
+  onLocationExtracted?: (location: Location) => void;
 };
 
-export function PhotoPicker({ value, onChange }: PhotoPickerProps) {
+export function PhotoPicker({ value, onChange, onLocationExtracted }: PhotoPickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const resized = await resizeImage(file);
+
+    const [resized, gpsLocation] = await Promise.all([
+      resizeImage(file),
+      onLocationExtracted ? extractGpsLocation(file) : Promise.resolve(null),
+    ]);
+
+    if (gpsLocation && onLocationExtracted) {
+      onLocationExtracted(gpsLocation);
+    }
+
     const newPhoto: SakePhoto = {
       url: resized,
       isCover: value.length === 0,
