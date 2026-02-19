@@ -40,7 +40,7 @@ export function SakeForm({
   const [submitting, setSubmitting] = useState(false);
 
   const hasAnyInput =
-    name.trim() || photos.length > 0 || restaurant.trim() || origin.trim() || memo.trim();
+    name.trim() || photos.length > 0 || restaurant.trim() || origin.trim() || memo.trim() || location !== null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
