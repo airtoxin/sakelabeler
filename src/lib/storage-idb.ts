@@ -2,7 +2,7 @@ import { openDB, type IDBPDatabase } from "idb";
 import type { SakeRecord, SakeRecordInput, SakeStorage } from "./types";
 
 const DB_NAME = "sakelabeler";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const STORE_NAME = "records";
 
 function getDB(): Promise<IDBPDatabase> {
@@ -47,6 +47,20 @@ function getDB(): Promise<IDBPDatabase> {
             changed = true;
           }
           if (changed) cursor.update(record);
+          return cursor.continue().then(iterate);
+        });
+      }
+
+      // Add location field
+      if (oldVersion < 4) {
+        const store = transaction.objectStore(STORE_NAME);
+        store.openCursor().then(function iterate(cursor): Promise<void> | void {
+          if (!cursor) return;
+          const record = cursor.value;
+          if (!("location" in record)) {
+            record.location = null;
+            cursor.update(record);
+          }
           return cursor.continue().then(iterate);
         });
       }

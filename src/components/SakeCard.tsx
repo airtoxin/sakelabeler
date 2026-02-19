@@ -86,9 +86,25 @@ export function SakeCard({ record }: SakeCardProps) {
           )}
           <div className="flex items-center justify-between mt-1">
             <StarRating value={record.rating} size="sm" />
-            <span className="text-xs text-gray-400 dark:text-gray-500">
-              {formatDate(record.date)}
-            </span>
+            <div className="flex items-center gap-1">
+              {record.location && (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="w-3 h-3 text-gray-400"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="m9.69 18.933.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.274 1.765 11.307 11.307 0 00.757.433c.113.058.2.1.281.14l.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              )}
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                {formatDate(record.date)}
+              </span>
+            </div>
           </div>
         </div>
       </div>

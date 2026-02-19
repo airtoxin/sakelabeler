@@ -5,6 +5,11 @@ export type SakePhoto = {
 
 export type AlcoholType = "nihonshu" | "beer" | "wine" | "shochu" | "whiskey" | "";
 
+export type Location = {
+  lat: number;
+  lng: number;
+};
+
 export type SakeRecord = {
   id: string;
   name: string;
@@ -13,6 +18,7 @@ export type SakeRecord = {
   tags: string[];
   restaurant: string;
   origin: string;
+  location: Location | null;
   date: string;
   rating: number;
   memo: string;
