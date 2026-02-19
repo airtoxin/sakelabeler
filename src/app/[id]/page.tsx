@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Header } from "@/components/Header";
 import { SakeForm } from "@/components/SakeForm";
 import { StarRating } from "@/components/StarRating";
@@ -11,6 +12,13 @@ import { formatDate } from "@/lib/utils";
 import { getCoverPhoto } from "@/lib/types";
 import { getAlcoholTypeConfig } from "@/lib/alcohol-types";
 import type { SakeRecord, SakeRecordInput } from "@/lib/types";
+
+const LocationMap = dynamic(() => import("@/components/LocationMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-32 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+  ),
+});
 
 export default function RecordDetailPage() {
   const params = useParams();
@@ -177,6 +185,28 @@ export default function RecordDetailPage() {
               <span>{formatDate(record.date)}</span>
             </div>
           </div>
+
+          {record.location && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex gap-2 text-sm">
+                <span className="text-gray-400 dark:text-gray-500 w-12 flex-shrink-0">
+                  場所
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {record.location.lat.toFixed(6)},{" "}
+                  {record.location.lng.toFixed(6)}
+                </span>
+              </div>
+              <div className="h-32 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                <LocationMap
+                  center={[record.location.lat, record.location.lng]}
+                  marker={[record.location.lat, record.location.lng]}
+                  interactive={false}
+                  zoom={15}
+                />
+              </div>
+            </div>
+          )}
 
           {record.memo && (
             <div>

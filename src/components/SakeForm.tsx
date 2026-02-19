@@ -4,8 +4,9 @@ import { useState } from "react";
 import { PhotoPicker } from "./PhotoPicker";
 import { StarRating } from "./StarRating";
 import { FlavorTagPicker } from "./FlavorTagPicker";
+import { LocationPicker } from "./LocationPicker";
 import { todayString } from "@/lib/utils";
-import type { SakeRecordInput, SakePhoto, AlcoholType } from "@/lib/types";
+import type { SakeRecordInput, SakePhoto, AlcoholType, Location } from "@/lib/types";
 
 type SakeFormProps = {
   initialValues?: Partial<SakeRecordInput>;
@@ -30,13 +31,16 @@ export function SakeForm({
     initialValues?.restaurant ?? ""
   );
   const [origin, setOrigin] = useState(initialValues?.origin ?? "");
+  const [location, setLocation] = useState<Location | null>(
+    initialValues?.location ?? null
+  );
   const [date, setDate] = useState(initialValues?.date ?? todayString());
   const [rating, setRating] = useState(initialValues?.rating ?? 3);
   const [memo, setMemo] = useState(initialValues?.memo ?? "");
   const [submitting, setSubmitting] = useState(false);
 
   const hasAnyInput =
-    name.trim() || photos.length > 0 || restaurant.trim() || origin.trim() || memo.trim();
+    name.trim() || photos.length > 0 || restaurant.trim() || origin.trim() || memo.trim() || location !== null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +54,7 @@ export function SakeForm({
         tags,
         restaurant: restaurant.trim(),
         origin: origin.trim(),
+        location,
         date,
         rating,
         memo: memo.trim(),
@@ -91,6 +96,8 @@ export function SakeForm({
           className="px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
         />
       </label>
+
+      <LocationPicker value={location} onChange={setLocation} />
 
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">産地</span>
