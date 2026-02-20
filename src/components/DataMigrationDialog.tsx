@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { IDBSakeStorage } from "@/lib/storage-idb";
 import { SupabaseSakeStorage } from "@/lib/storage-supabase";
-import { isSupabaseConfigured } from "@/lib/supabase";
 import type { SakeRecord } from "@/lib/types";
 
 type DataMigrationDialogProps = {
@@ -74,20 +73,6 @@ export function DataMigrationDialog({
     // Pre-flight validation
     try {
       console.log("[Migration] Running pre-flight checks...");
-
-      // Check Supabase configuration
-      if (!isSupabaseConfigured) {
-        const errorMsg =
-          "Supabaseが設定されていません。環境変数 NEXT_PUBLIC_SUPABASE_URL と NEXT_PUBLIC_SUPABASE_ANON_KEY を確認してください。";
-        console.error("[Migration]", errorMsg);
-        setError({
-          message: errorMsg,
-          step: "設定確認",
-          fullError: errorMsg,
-        });
-        setMigrating(false);
-        return;
-      }
 
       // Check authentication by attempting to get user ID
       console.log("[Migration] Checking authentication status...");

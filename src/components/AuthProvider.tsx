@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 
 type AuthContextType = {
@@ -22,11 +22,9 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(isSupabaseConfigured);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
@@ -42,19 +40,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    if (!isSupabaseConfigured) return { error: "Supabaseが設定されていません" };
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error?.message ?? null };
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    if (!isSupabaseConfigured) return { error: "Supabaseが設定されていません" };
     const { error } = await supabase.auth.signUp({ email, password });
     return { error: error?.message ?? null };
   }, []);
 
   const signOut = useCallback(async () => {
-    if (!isSupabaseConfigured) return;
     await supabase.auth.signOut();
   }, []);
 
