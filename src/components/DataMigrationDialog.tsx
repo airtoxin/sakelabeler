@@ -94,29 +94,15 @@ export function DataMigrationDialog({
       console.log("[Migration] Validating record structures...");
       for (let i = 0; i < idbRecords.length; i++) {
         const record = idbRecords[i];
-        if (!record.name) {
-          const errorMsg = `レコード ${i + 1}/${total} に銘柄名がありません`;
-          console.error("[Migration]", errorMsg);
-          setError({
-            message: errorMsg,
-            step: "レコード検証",
-            failedRecord: {
-              name: "（未設定）",
-              date: record.date,
-            },
-            fullError: errorMsg,
-          });
-          setMigrating(false);
-          return;
-        }
         if (!Array.isArray(record.photos)) {
-          const errorMsg = `レコード「${record.name}」の写真データが不正です`;
+          const displayName = record.name || "（名前なし）";
+          const errorMsg = `レコード「${displayName}」の写真データが不正です`;
           console.error("[Migration]", errorMsg);
           setError({
             message: errorMsg,
             step: "レコード検証",
             failedRecord: {
-              name: record.name,
+              name: displayName,
               date: record.date,
             },
             fullError: errorMsg,
@@ -149,19 +135,19 @@ export function DataMigrationDialog({
       // Migrate records
       for (let i = 0; i < idbRecords.length; i++) {
         const record = idbRecords[i];
-        const stepLabel = `${i + 1}/${total}: ${record.name}`;
+        const stepLabel = `${i + 1}/${total}: ${record.name || "（名前なし）"}`;
 
         try {
           console.log(`[Migration] Uploading record ${stepLabel}...`);
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { id, createdAt, updatedAt, ...input } = record;
-          await supabaseStorage.create(input);
+          await supabaseStorage.create({ ...input, name: input.name || "" });
           console.log(`[Migration] Successfully uploaded ${stepLabel}`);
           setProgress(i + 1);
         } catch (recordErr) {
           const errorMsg = getErrorMessage(
             recordErr,
-            `レコード「${record.name}」の転送に失敗しました`
+            `レコード「${record.name || "（名前なし）"}」の転送に失敗しました`
           );
           console.error(
             `[Migration] Error uploading record ${stepLabel}:`,
@@ -170,7 +156,7 @@ export function DataMigrationDialog({
           setError({
             message: errorMsg,
             failedRecord: {
-              name: record.name,
+              name: record.name || "（名前なし）",
               date: record.date,
             },
             step: "レコードアップロード",
