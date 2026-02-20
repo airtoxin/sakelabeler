@@ -3,12 +3,23 @@
 import { useState } from "react";
 import { IDBSakeStorage } from "@/lib/storage-idb";
 import { SupabaseSakeStorage } from "@/lib/storage-supabase";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import type { SakeRecord } from "@/lib/types";
 
 type DataMigrationDialogProps = {
   idbRecords: SakeRecord[];
   onComplete: () => void;
   onDismiss: () => void;
+};
+
+type ErrorDetails = {
+  message: string;
+  failedRecord?: {
+    name: string;
+    date: string;
+  };
+  step?: string;
+  fullError?: string;
 };
 
 export function DataMigrationDialog({
@@ -18,37 +29,191 @@ export function DataMigrationDialog({
 }: DataMigrationDialogProps) {
   const [migrating, setMigrating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorDetails | null>(null);
   const [done, setDone] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   const total = idbRecords.length;
+
+  const getErrorMessage = (err: unknown, context?: string): string => {
+    if (err instanceof Error) {
+      return err.message;
+    }
+    if (typeof err === "string") {
+      return err;
+    }
+    return context || "Unknown error occurred";
+  };
 
   const handleMigrate = async () => {
     setMigrating(true);
     setError(null);
 
+    console.log(`[Migration] Starting migration of ${total} records`);
+
+    // Pre-flight validation
+    try {
+      console.log("[Migration] Running pre-flight checks...");
+
+      // Check Supabase configuration
+      if (!isSupabaseConfigured) {
+        const errorMsg =
+          "Supabaseが設定されていません。環境変数 NEXT_PUBLIC_SUPABASE_URL と NEXT_PUBLIC_SUPABASE_ANON_KEY を確認してください。";
+        console.error("[Migration]", errorMsg);
+        setError({
+          message: errorMsg,
+          step: "設定確認",
+          fullError: errorMsg,
+        });
+        setMigrating(false);
+        return;
+      }
+
+      // Check authentication by attempting to get user ID
+      console.log("[Migration] Checking authentication status...");
+      const supabaseStorage = new SupabaseSakeStorage();
+      try {
+        // Trigger early auth check by calling getAll which requires getUserId internally
+        await supabaseStorage.getAll();
+      } catch (authErr) {
+        const authError = getErrorMessage(
+          authErr,
+          "認証に失敗しました"
+        );
+        console.error("[Migration] Auth check failed:", authError);
+        setError({
+          message: "認証が無効です。もう一度ログインしてください。",
+          step: "認証確認",
+          fullError: authError,
+        });
+        setMigrating(false);
+        return;
+      }
+
+      // Validate record structure
+      console.log("[Migration] Validating record structures...");
+      for (let i = 0; i < idbRecords.length; i++) {
+        const record = idbRecords[i];
+        if (!record.name) {
+          const errorMsg = `レコード ${i + 1}/${total} に銘柄名がありません`;
+          console.error("[Migration]", errorMsg);
+          setError({
+            message: errorMsg,
+            step: "レコード検証",
+            failedRecord: {
+              name: "（未設定）",
+              date: record.date,
+            },
+            fullError: errorMsg,
+          });
+          setMigrating(false);
+          return;
+        }
+        if (!Array.isArray(record.photos)) {
+          const errorMsg = `レコード「${record.name}」の写真データが不正です`;
+          console.error("[Migration]", errorMsg);
+          setError({
+            message: errorMsg,
+            step: "レコード検証",
+            failedRecord: {
+              name: record.name,
+              date: record.date,
+            },
+            fullError: errorMsg,
+          });
+          setMigrating(false);
+          return;
+        }
+      }
+
+      console.log("[Migration] Pre-flight checks passed. Starting migration...");
+    } catch (preflightErr) {
+      const errorMsg = getErrorMessage(
+        preflightErr,
+        "事前チェック中にエラーが発生しました"
+      );
+      console.error("[Migration] Pre-flight check error:", errorMsg);
+      setError({
+        message: errorMsg,
+        step: "事前チェック",
+        fullError: errorMsg,
+      });
+      setMigrating(false);
+      return;
+    }
+
     const supabaseStorage = new SupabaseSakeStorage();
     const idbStorage = new IDBSakeStorage();
 
     try {
+      // Migrate records
       for (let i = 0; i < idbRecords.length; i++) {
         const record = idbRecords[i];
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id, createdAt, updatedAt, ...input } = record;
-        await supabaseStorage.create(input);
-        setProgress(i + 1);
+        const stepLabel = `${i + 1}/${total}: ${record.name}`;
+
+        try {
+          console.log(`[Migration] Uploading record ${stepLabel}...`);
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { id, createdAt, updatedAt, ...input } = record;
+          await supabaseStorage.create(input);
+          console.log(`[Migration] Successfully uploaded ${stepLabel}`);
+          setProgress(i + 1);
+        } catch (recordErr) {
+          const errorMsg = getErrorMessage(
+            recordErr,
+            `レコード「${record.name}」の転送に失敗しました`
+          );
+          console.error(
+            `[Migration] Error uploading record ${stepLabel}:`,
+            recordErr
+          );
+          setError({
+            message: errorMsg,
+            failedRecord: {
+              name: record.name,
+              date: record.date,
+            },
+            step: "レコードアップロード",
+            fullError:
+              recordErr instanceof Error
+                ? `${recordErr.message}\n${recordErr.stack}`
+                : String(recordErr),
+          });
+          setMigrating(false);
+          return;
+        }
       }
 
       // Delete migrated records from IndexedDB
+      console.log("[Migration] Deleting migrated records from IndexedDB...");
       for (const record of idbRecords) {
-        await idbStorage.delete(record.id);
+        try {
+          await idbStorage.delete(record.id);
+        } catch (delErr) {
+          console.warn(
+            `[Migration] Warning: Failed to delete ${record.id} from IndexedDB:`,
+            delErr
+          );
+          // Non-blocking error for IndexedDB deletion
+        }
       }
 
+      console.log("[Migration] Migration completed successfully!");
       setDone(true);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "移行中にエラーが発生しました"
+      const errorMsg = getErrorMessage(
+        err,
+        "移行中にエラーが発生しました"
       );
+      console.error("[Migration] Unexpected error:", err);
+      setError({
+        message: errorMsg,
+        step: "移行処理",
+        fullError:
+          err instanceof Error
+            ? `${err.message}\n${err.stack}`
+            : String(err),
+      });
       setMigrating(false);
     }
   };
@@ -100,8 +265,35 @@ export function DataMigrationDialog({
         )}
 
         {error && (
-          <div className="text-sm text-red-500 bg-red-50 dark:bg-red-950 px-3 py-2 rounded-lg mb-4">
-            {error}
+          <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 px-3 py-2 rounded-lg mb-4">
+            <div className="font-medium mb-2">{error.message}</div>
+            {error.failedRecord && (
+              <div className="text-xs text-red-500 dark:text-red-300 mb-2">
+                <div>レコード: 「{error.failedRecord.name}」</div>
+                <div>日付: {error.failedRecord.date}</div>
+              </div>
+            )}
+            {error.step && (
+              <div className="text-xs text-red-500 dark:text-red-300 mb-2">
+                失敗ステップ: {error.step}
+              </div>
+            )}
+            {error.fullError && (
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDetails(!showDetails)}
+                  className="text-xs text-red-500 dark:text-red-300 hover:underline"
+                >
+                  {showDetails ? "詳細を隠す" : "詳細を表示"}
+                </button>
+                {showDetails && (
+                  <div className="mt-2 text-xs bg-red-100 dark:bg-red-900 p-2 rounded font-mono overflow-auto max-h-40">
+                    {error.fullError}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
