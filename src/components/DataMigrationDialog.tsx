@@ -42,7 +42,27 @@ export function DataMigrationDialog({
     if (typeof err === "string") {
       return err;
     }
+    // Handle Supabase error objects (PostgrestError, StorageError)
+    // which have a `message` property but don't extend Error
+    if (err != null && typeof err === "object" && "message" in err && typeof (err as { message: unknown }).message === "string") {
+      return (err as { message: string }).message;
+    }
     return context || "Unknown error occurred";
+  };
+
+  const formatFullError = (err: unknown): string => {
+    if (err instanceof Error) {
+      return `${err.message}\n${err.stack}`;
+    }
+    if (typeof err === "string") {
+      return err;
+    }
+    // Handle plain objects (e.g. Supabase errors) by serializing to JSON
+    try {
+      return JSON.stringify(err, null, 2);
+    } catch {
+      return String(err);
+    }
   };
 
   const handleMigrate = async () => {
@@ -141,7 +161,22 @@ export function DataMigrationDialog({
           console.log(`[Migration] Uploading record ${stepLabel}...`);
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { id, createdAt, updatedAt, ...input } = record;
-          await supabaseStorage.create({ ...input, name: input.name || "" });
+          // Normalize fields that may be missing from older IDB records
+          const normalizedInput = {
+            ...input,
+            name: input.name || "",
+            photos: Array.isArray(input.photos) ? input.photos : [],
+            alcoholType: input.alcoholType || ("" as const),
+            tags: Array.isArray(input.tags) ? input.tags : [],
+            restaurant: input.restaurant || "",
+            origin: input.origin || "",
+            location: input.location ?? null,
+            locationText: input.locationText ?? null,
+            date: input.date || new Date().toISOString().split("T")[0],
+            rating: input.rating || 0,
+            memo: input.memo || "",
+          };
+          await supabaseStorage.create(normalizedInput);
           console.log(`[Migration] Successfully uploaded ${stepLabel}`);
           setProgress(i + 1);
         } catch (recordErr) {
@@ -160,10 +195,7 @@ export function DataMigrationDialog({
               date: record.date,
             },
             step: "レコードアップロード",
-            fullError:
-              recordErr instanceof Error
-                ? `${recordErr.message}\n${recordErr.stack}`
-                : String(recordErr),
+            fullError: formatFullError(recordErr),
           });
           setMigrating(false);
           return;
@@ -195,10 +227,7 @@ export function DataMigrationDialog({
       setError({
         message: errorMsg,
         step: "移行処理",
-        fullError:
-          err instanceof Error
-            ? `${err.message}\n${err.stack}`
-            : String(err),
+        fullError: formatFullError(err),
       });
       setMigrating(false);
     }
