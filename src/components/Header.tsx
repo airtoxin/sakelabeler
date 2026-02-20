@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useAuth } from "./AuthProvider";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 type HeaderProps = {
   title: string;
@@ -9,6 +11,7 @@ type HeaderProps = {
 
 export function Header({ title, showBack }: HeaderProps) {
   const router = useRouter();
+  const { user, signOut } = useAuth();
 
   return (
     <header className="sticky top-0 z-10 bg-violet-600 text-white px-4 py-3 flex items-center gap-3 shadow-md">
@@ -28,7 +31,27 @@ export function Header({ title, showBack }: HeaderProps) {
           </svg>
         </button>
       )}
-      <h1 className="text-lg font-bold truncate">{title}</h1>
+      <h1 className="text-lg font-bold truncate flex-1">{title}</h1>
+      {isSupabaseConfigured && (
+        user ? (
+          <button
+            onClick={async () => {
+              await signOut();
+              router.push("/");
+            }}
+            className="text-xs px-2.5 py-1.5 rounded-lg bg-violet-500 hover:bg-violet-400 active:bg-violet-700 transition-colors"
+          >
+            ログアウト
+          </button>
+        ) : (
+          <button
+            onClick={() => router.push("/login")}
+            className="text-xs px-2.5 py-1.5 rounded-lg bg-violet-500 hover:bg-violet-400 active:bg-violet-700 transition-colors"
+          >
+            ログイン
+          </button>
+        )
+      )}
     </header>
   );
 }

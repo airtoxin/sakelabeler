@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { storage } from "@/lib/storage";
+import { useStorage } from "@/components/StorageProvider";
 import type { SakeRecord, SakeRecordInput } from "@/lib/types";
 
 export function useSakeRecords() {
+  const storage = useStorage();
   const [records, setRecords] = useState<SakeRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -13,11 +14,20 @@ export function useSakeRecords() {
     const data = await storage.getAll();
     setRecords(data);
     setLoading(false);
-  }, []);
+  }, [storage]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    let cancelled = false;
+    storage.getAll().then((data) => {
+      if (!cancelled) {
+        setRecords(data);
+        setLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [storage]);
 
   const create = async (input: SakeRecordInput) => {
     const record = await storage.create(input);

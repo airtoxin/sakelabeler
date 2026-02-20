@@ -1,17 +1,21 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { SakeCard } from "@/components/SakeCard";
 import { RatingFilter } from "@/components/RatingFilter";
 import { AlcoholTypeFilter } from "@/components/AlcoholTypeFilter";
 import { EmptyState } from "@/components/EmptyState";
+import { DataMigrationDialog } from "@/components/DataMigrationDialog";
 import { useSakeRecords } from "@/hooks/useSakeRecords";
-import type { AlcoholType } from "@/lib/types";
+import { useAuth } from "@/components/AuthProvider";
+import { IDBSakeStorage } from "@/lib/storage-idb";
+import type { AlcoholType, SakeRecord } from "@/lib/types";
 
 export default function HomePage() {
-  const { records, loading } = useSakeRecords();
+  const { records, loading, refresh } = useSakeRecords();
+  const { user } = useAuth();
   const [selectedRatings, setSelectedRatings] = useState<Set<number>>(
     new Set()
   );
@@ -19,6 +23,22 @@ export default function HomePage() {
     new Set()
   );
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+
+  // Data migration state
+  const [idbRecords, setIdbRecords] = useState<SakeRecord[]>([]);
+  const [showMigration, setShowMigration] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      const idb = new IDBSakeStorage();
+      idb.getAll().then((records) => {
+        if (records.length > 0) {
+          setIdbRecords(records);
+          setShowMigration(true);
+        }
+      });
+    }
+  }, [user]);
 
   const hasFilter =
     selectedRatings.size > 0 || selectedTypes.size > 0 || selectedTags.size > 0;
@@ -116,6 +136,18 @@ export default function HomePage() {
       >
         +
       </Link>
+
+      {showMigration && (
+        <DataMigrationDialog
+          idbRecords={idbRecords}
+          onComplete={() => {
+            setShowMigration(false);
+            setIdbRecords([]);
+            refresh();
+          }}
+          onDismiss={() => setShowMigration(false)}
+        />
+      )}
     </div>
   );
 }
