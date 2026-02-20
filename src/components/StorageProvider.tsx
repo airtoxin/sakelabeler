@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useMemo } from "react";
 import { useAuth } from "./AuthProvider";
-import { isSupabaseConfigured } from "@/lib/supabase";
 import { IDBSakeStorage } from "@/lib/storage-idb";
 import { SupabaseSakeStorage } from "@/lib/storage-supabase";
 import type { SakeStorage } from "@/lib/types";
@@ -13,7 +12,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
 
   const storage = useMemo<SakeStorage>(() => {
-    if (isSupabaseConfigured && user) {
+    if (user) {
       return new SupabaseSakeStorage();
     }
     return new IDBSakeStorage();
