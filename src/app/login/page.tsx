@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 export default function LoginPage() {
   const { user, signIn, signUp } = useAuth();
@@ -13,7 +14,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
 
-  if (user) {
+  if (!isSupabaseConfigured || user) {
     router.replace("/");
     return null;
   }
