@@ -7,7 +7,7 @@ import { Header } from "@/components/Header";
 import { SakeForm } from "@/components/SakeForm";
 import { StarRating } from "@/components/StarRating";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { storage } from "@/lib/storage";
+import { useStorage } from "@/components/StorageProvider";
 import { formatDate } from "@/lib/utils";
 import { getAlcoholTypeConfig } from "@/lib/alcohol-types";
 import { PhotoCarousel } from "@/components/PhotoCarousel";
@@ -24,6 +24,7 @@ const LocationMap = dynamic(() => import("@/components/LocationMap"), {
 export default function RecordDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const storage = useStorage();
   const id = params.id as string;
 
   const [record, setRecord] = useState<SakeRecord | null>(null);
@@ -36,7 +37,7 @@ export default function RecordDetailPage() {
       setRecord(r);
       setLoading(false);
     });
-  }, [id]);
+  }, [id, storage]);
 
   useEffect(() => {
     if (record && record.location && !record.locationText) {
@@ -48,7 +49,7 @@ export default function RecordDetailPage() {
         }
       });
     }
-  }, [record?.id, record?.location, record?.locationText]);
+  }, [record?.id, record?.location, record?.locationText, storage]);
 
   const handleUpdate = async (values: SakeRecordInput) => {
     await storage.update(id, values);

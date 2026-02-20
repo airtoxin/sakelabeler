@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { SakeForm } from "@/components/SakeForm";
-import { storage } from "@/lib/storage";
+import { useStorage } from "@/components/StorageProvider";
 import type { SakeRecordInput } from "@/lib/types";
 
 export default function NewRecordPage() {
   const router = useRouter();
+  const storage = useStorage();
 
   const handleSubmit = async (values: SakeRecordInput) => {
     await storage.create(values);
