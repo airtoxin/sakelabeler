@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Header } from "@/components/Header";
@@ -14,7 +14,8 @@ import { getAlcoholTypeConfig } from "@/lib/alcohol-types";
 import { PhotoCarousel } from "@/components/PhotoCarousel";
 import { reverseGeocode } from "@/lib/geocoding";
 import { SupabaseSakeStorage } from "@/lib/storage-supabase";
-import { getMyShares, type DbShare } from "@/lib/sharing";
+import { getMyShares, getSharedWithMe } from "@/lib/sharing";
+import { supabase } from "@/lib/supabase";
 import type { SakeRecord, SakeRecordInput, SakePhoto } from "@/lib/types";
 
 const LocationMap = dynamic(() => import("@/components/LocationMap"), {
@@ -23,6 +24,8 @@ const LocationMap = dynamic(() => import("@/components/LocationMap"), {
     <div className="w-full h-32 bg-gray-100 dark:bg-gray-800 rounded-lg" />
   ),
 });
+
+type CopyTarget = { label: string; userId: string | undefined };
 
 export default function RecordDetailPage() {
   const params = useParams();
@@ -35,8 +38,9 @@ export default function RecordDetailPage() {
   const [editing, setEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [copying, setCopying] = useState(false);
-  const [copyTargets, setCopyTargets] = useState<DbShare[]>([]);
+  const [copyTargets, setCopyTargets] = useState<CopyTarget[]>([]);
   const [showCopyMenu, setShowCopyMenu] = useState(false);
+  const copyMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     storage.getById(id).then((r) => {
@@ -46,14 +50,54 @@ export default function RecordDetailPage() {
   }, [id, storage]);
 
   useEffect(() => {
-    if (sharingContext.type === "shared") {
-      // 共有DB閲覧中 → 「自分のDBにコピー」のみ（ターゲット不要）
-      setCopyTargets([]);
-    } else {
-      // 自分のDB → 共有先一覧を取得
-      getMyShares().then(setCopyTargets).catch(() => {});
-    }
+    Promise.all([getMyShares(), getSharedWithMe(), supabase.auth.getUser()])
+      .then(([myShares, sharedWithMe, { data: { user } }]) => {
+        if (!user) {
+          setCopyTargets([]);
+          return;
+        }
+        const targets: CopyTarget[] = [];
+
+        // 自分のDB（共有DB閲覧中のみ表示）
+        if (sharingContext.type === "shared") {
+          targets.push({ label: "マイDB", userId: undefined });
+        }
+
+        // 共有元（owner）のDB
+        for (const share of sharedWithMe) {
+          if (share.owner_id === user.id) continue;
+          if (sharingContext.type === "shared" && sharingContext.ownerId === share.owner_id) continue;
+          targets.push({
+            label: `${share.owner_id.substring(0, 7)}... のDB（共有元）`,
+            userId: share.owner_id,
+          });
+        }
+
+        // 共有先（invitee）のDB
+        for (const share of myShares) {
+          if (share.invitee_id === user.id) continue;
+          if (sharingContext.type === "shared" && sharingContext.ownerId === share.invitee_id) continue;
+          targets.push({
+            label: `${share.invitee_id.substring(0, 7)}... のDB`,
+            userId: share.invitee_id,
+          });
+        }
+
+        setCopyTargets(targets);
+      })
+      .catch(() => {});
   }, [sharingContext]);
+
+  useEffect(() => {
+    if (!showCopyMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (copyMenuRef.current && !copyMenuRef.current.contains(e.target as Node)) {
+        setShowCopyMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showCopyMenu]);
 
   useEffect(() => {
     if (record && record.location && !record.locationText) {
@@ -284,35 +328,35 @@ export default function RecordDetailPage() {
           )}
 
           {/* コピーボタン */}
-          {sharingContext.type === "shared" ? (
+          {copyTargets.length === 1 ? (
             <button
               type="button"
-              onClick={() => handleCopyRecord(undefined)}
+              onClick={() => handleCopyRecord(copyTargets[0].userId)}
               disabled={copying}
               className="w-full py-3 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 active:bg-emerald-800 transition-colors disabled:opacity-50 mt-2"
             >
-              {copying ? "コピー中..." : "自分のDBにコピー"}
+              {copying ? "コピー中..." : `${copyTargets[0].label}にコピー`}
             </button>
-          ) : copyTargets.length > 0 ? (
-            <div className="relative mt-2">
+          ) : copyTargets.length > 1 ? (
+            <div ref={copyMenuRef} className="relative mt-2">
               <button
                 type="button"
                 onClick={() => setShowCopyMenu(!showCopyMenu)}
                 disabled={copying}
                 className="w-full py-3 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 active:bg-emerald-800 transition-colors disabled:opacity-50"
               >
-                {copying ? "コピー中..." : "共有先DBにコピー"}
+                {copying ? "コピー中..." : "DBにコピー"}
               </button>
               {showCopyMenu && (
                 <div className="absolute bottom-full left-0 right-0 mb-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
-                  {copyTargets.map((share) => (
+                  {copyTargets.map((target) => (
                     <button
-                      key={share.id}
+                      key={target.userId ?? "own"}
                       type="button"
-                      onClick={() => handleCopyRecord(share.invitee_id)}
+                      onClick={() => handleCopyRecord(target.userId)}
                       className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                     >
-                      {share.invitee_id.substring(0, 7)}... のDB
+                      {target.label}
                     </button>
                   ))}
                 </div>
