@@ -71,9 +71,13 @@ export function ShareManagement() {
       setInviteeId("");
       await refresh();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "招待に失敗しました";
+      const msg = e instanceof Error ? e.message : typeof e === "object" && e !== null && "message" in e ? String((e as { message: unknown }).message) : "招待に失敗しました";
       if (msg.includes("duplicate") || msg.includes("unique")) {
         setError("このユーザーは既に招待済みです");
+      } else if (msg.includes("violates foreign key")) {
+        setError("指定されたユーザーが見つかりません");
+      } else if (msg.includes("row-level security") || msg.includes("RLS")) {
+        setError("認証に失敗しました。ページを再読み込みしてください");
       } else {
         setError(msg);
       }
