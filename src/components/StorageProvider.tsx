@@ -8,6 +8,27 @@ export type SharingContext =
   | { type: "own" }
   | { type: "shared"; ownerId: string };
 
+const STORAGE_KEY = "sakelabeler:sharingContext";
+
+function loadSharingContext(): SharingContext {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.type === "own" || (parsed.type === "shared" && parsed.ownerId)) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return { type: "own" };
+}
+
+function saveSharingContext(ctx: SharingContext) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(ctx));
+  } catch {}
+}
+
 type StorageContextType = {
   storage: SakeStorage;
   sharingContext: SharingContext;
@@ -23,9 +44,9 @@ const StorageContext = createContext<StorageContextType>({
 });
 
 export function StorageProvider({ children }: { children: React.ReactNode }) {
-  const [sharingContext, setSharingContext] = useState<SharingContext>({
-    type: "own",
-  });
+  const [sharingContext, setSharingContext] = useState<SharingContext>(
+    () => loadSharingContext()
+  );
 
   const storage = useMemo<SakeStorage>(() => {
     if (sharingContext.type === "shared") {
@@ -35,11 +56,15 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
   }, [sharingContext]);
 
   const switchToOwn = useCallback(() => {
-    setSharingContext({ type: "own" });
+    const ctx: SharingContext = { type: "own" };
+    saveSharingContext(ctx);
+    setSharingContext(ctx);
   }, []);
 
   const switchToShared = useCallback((ownerId: string) => {
-    setSharingContext({ type: "shared", ownerId });
+    const ctx: SharingContext = { type: "shared", ownerId };
+    saveSharingContext(ctx);
+    setSharingContext(ctx);
   }, []);
 
   return (
