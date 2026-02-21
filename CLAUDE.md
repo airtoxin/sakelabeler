@@ -2,15 +2,35 @@
 
 ## プロジェクト概要
 
-**さけラベラー (sakelabeler)** — 飲食店で飲んだお酒を記録・管理するWebアプリ。写真、位置情報、評価、風味タグなどを付けて記録できる。データはブラウザのIndexedDBに保存されるクライアント完結型アプリ。
+**さけラベラー (sakelabeler)** — 飲食店で飲んだお酒を記録・管理するWebアプリ。写真、位置情報、評価、風味タグなどを付けて記録できる。未ログイン時はIndexedDB、ログイン時はSupabaseにデータを保存。
+
+## ローカル開発環境の起動
+
+前提: Docker が起動していること。
+
+```bash
+pnpm setup              # 初回セットアップ（pnpm install + supabase start）
+pnpm dev                # 開発サーバー起動 (localhost:3000)
+```
+
+`pnpm setup` は `pnpm install` の後にローカルSupabase（DB・Auth・Storage）をDockerで起動し、マイグレーションを自動適用する。
+
+2回目以降は `pnpm supabase:start && pnpm dev` で起動できる。ログイン不要でIndexedDBのみ使う場合は `pnpm dev` 単体でも動作する。
 
 ## コマンド
 
 ```bash
-pnpm install    # 依存関係インストール
-pnpm dev        # 開発サーバー起動 (localhost:3000)
-pnpm build      # プロダクションビルド
-pnpm lint       # ESLint実行
+pnpm install                    # 依存関係インストール
+pnpm dev                        # 開発サーバー起動 (localhost:3000)
+pnpm build                      # プロダクションビルド
+pnpm lint                       # ESLint実行
+pnpm setup                      # 初回セットアップ（install + supabase start）
+pnpm supabase:start             # ローカルSupabase起動
+pnpm supabase:stop              # ローカルSupabase停止
+pnpm supabase:reset             # マイグレーション全再適用
+pnpm supabase:migration:new     # 新規マイグレーション作成
+pnpm supabase:migration:list    # マイグレーション一覧
+pnpm supabase:push              # リモートDBにマイグレーション適用
 ```
 
 パッケージマネージャーは **pnpm**。npm/yarnは使わない。
@@ -81,8 +101,9 @@ type SakeRecord = {
 
 ## アーキテクチャ上の留意点
 
-- **サーバーサイド処理なし**: API Routes不使用。データはすべてIndexedDBに保存。
-- **ストレージ抽象化**: `SakeStorage`インターフェースで抽象化済み。現在の実装は`IDBSakeStorage`のみ。
+- **サーバーサイド処理なし**: API Routes不使用。
+- **ストレージ抽象化**: `SakeStorage`インターフェースで抽象化済み。未ログイン時は`IDBSakeStorage`（IndexedDB）、ログイン時は`SupabaseSakeStorage`（Supabase）を使用。
+- **Supabase**: ローカル開発は `supabase start` でDockerに立ち上げる。マイグレーションは `supabase/migrations/` で管理。スキーマ変更時は `pnpm supabase:migration:new <name>` で新規ファイルを作成。
 - **IndexedDBマイグレーション**: `storage-idb.ts`にv1→v4のマイグレーション定義あり。スキーマ変更時はDB_VERSIONをインクリメントしてupgrade関数にマイグレーション追加。
 - **地図コンポーネント**: `LocationMap.tsx`は`next/dynamic`でSSR無効化して読み込み（Leafletはwindow依存のため）。
 - **画像処理**: アップロード時にクライアントサイドで最大800px・JPEG品質0.7にリサイズ。画像はBase64 Data URLとしてIndexedDBに保存。
