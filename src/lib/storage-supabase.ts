@@ -66,12 +66,23 @@ function extractStoragePath(url: string): string | null {
 }
 
 export class SupabaseSakeStorage implements SakeStorage {
+  private targetUserId?: string;
+
+  constructor(targetUserId?: string) {
+    this.targetUserId = targetUserId;
+  }
+
   private async getUserId(): Promise<string> {
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
     return user.id;
+  }
+
+  private async getEffectiveUserId(): Promise<string> {
+    if (this.targetUserId) return this.targetUserId;
+    return this.getUserId();
   }
 
   private toSakeRecord(row: DbRecord, photos: DbPhoto[]): SakeRecord {
@@ -143,7 +154,7 @@ export class SupabaseSakeStorage implements SakeStorage {
   }
 
   async getAll(): Promise<SakeRecord[]> {
-    const userId = await this.getUserId();
+    const userId = await this.getEffectiveUserId();
 
     const { data: records, error } = await supabase
       .from("sake_records")
@@ -173,10 +184,12 @@ export class SupabaseSakeStorage implements SakeStorage {
   }
 
   async getById(id: string): Promise<SakeRecord | null> {
+    const userId = await this.getEffectiveUserId();
     const { data: record, error } = await supabase
       .from("sake_records")
       .select("*")
       .eq("id", id)
+      .eq("user_id", userId)
       .single();
 
     if (error || !record) return null;
@@ -190,7 +203,7 @@ export class SupabaseSakeStorage implements SakeStorage {
   }
 
   async create(input: SakeRecordInput): Promise<SakeRecord> {
-    const userId = await this.getUserId();
+    const userId = await this.getEffectiveUserId();
 
     const { data: record, error } = await supabase
       .from("sake_records")
@@ -226,7 +239,7 @@ export class SupabaseSakeStorage implements SakeStorage {
     id: string,
     input: Partial<SakeRecordInput>
   ): Promise<SakeRecord> {
-    const userId = await this.getUserId();
+    const userId = await this.getEffectiveUserId();
 
     // Update record fields (excluding photos)
     const updateData: Record<string, unknown> = {};
