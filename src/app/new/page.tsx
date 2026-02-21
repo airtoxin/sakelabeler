@@ -9,7 +9,7 @@ import type { SakeRecordInput } from "@/lib/types";
 
 export default function NewRecordPage() {
   const router = useRouter();
-  const storage = useStorage();
+  const { storage } = useStorage();
 
   const handleSubmit = async (values: SakeRecordInput) => {
     await storage.create(values);

@@ -5,7 +5,7 @@ import { useStorage } from "@/components/StorageProvider";
 import type { SakeRecord, SakeRecordInput } from "@/lib/types";
 
 export function useSakeRecords() {
-  const storage = useStorage();
+  const { storage } = useStorage();
   const [records, setRecords] = useState<SakeRecord[]>([]);
   const [loading, setLoading] = useState(true);
 

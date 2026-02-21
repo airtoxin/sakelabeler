@@ -13,7 +13,9 @@ import { formatDate } from "@/lib/utils";
 import { getAlcoholTypeConfig } from "@/lib/alcohol-types";
 import { PhotoCarousel } from "@/components/PhotoCarousel";
 import { reverseGeocode } from "@/lib/geocoding";
-import type { SakeRecord, SakeRecordInput } from "@/lib/types";
+import { SupabaseSakeStorage } from "@/lib/storage-supabase";
+import { getMyShares, type DbShare } from "@/lib/sharing";
+import type { SakeRecord, SakeRecordInput, SakePhoto } from "@/lib/types";
 
 const LocationMap = dynamic(() => import("@/components/LocationMap"), {
   ssr: false,
@@ -25,13 +27,16 @@ const LocationMap = dynamic(() => import("@/components/LocationMap"), {
 export default function RecordDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const storage = useStorage();
+  const { storage, sharingContext } = useStorage();
   const id = params.id as string;
 
   const [record, setRecord] = useState<SakeRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [copyTargets, setCopyTargets] = useState<DbShare[]>([]);
+  const [showCopyMenu, setShowCopyMenu] = useState(false);
 
   useEffect(() => {
     storage.getById(id).then((r) => {
@@ -39,6 +44,16 @@ export default function RecordDetailPage() {
       setLoading(false);
     });
   }, [id, storage]);
+
+  useEffect(() => {
+    if (sharingContext.type === "shared") {
+      // 共有DB閲覧中 → 「自分のDBにコピー」のみ（ターゲット不要）
+      setCopyTargets([]);
+    } else {
+      // 自分のDB → 共有先一覧を取得
+      getMyShares().then(setCopyTargets).catch(() => {});
+    }
+  }, [sharingContext]);
 
   useEffect(() => {
     if (record && record.location && !record.locationText) {
@@ -62,6 +77,52 @@ export default function RecordDetailPage() {
   const handleDelete = async () => {
     await storage.delete(id);
     router.push("/");
+  };
+
+  const fetchPhotoAsBase64 = async (url: string): Promise<string> => {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const handleCopyRecord = async (targetUserId?: string) => {
+    if (!record) return;
+    setCopying(true);
+    setShowCopyMenu(false);
+    try {
+      const targetStorage = new SupabaseSakeStorage(targetUserId);
+      const photos: SakePhoto[] = await Promise.all(
+        record.photos.map(async (p) => ({
+          url: await fetchPhotoAsBase64(p.url),
+          isCover: p.isCover,
+          gpsLocation: p.gpsLocation,
+        }))
+      );
+      const input: SakeRecordInput = {
+        name: record.name,
+        photos,
+        alcoholType: record.alcoholType,
+        tags: record.tags,
+        restaurant: record.restaurant,
+        origin: record.origin,
+        location: record.location,
+        locationText: record.locationText,
+        date: record.date,
+        rating: record.rating,
+        memo: record.memo,
+      };
+      await targetStorage.create(input);
+      alert("コピーしました");
+    } catch (e) {
+      alert("コピーに失敗しました: " + (e instanceof Error ? e.message : "不明なエラー"));
+    } finally {
+      setCopying(false);
+    }
   };
 
   if (loading) {
@@ -221,6 +282,43 @@ export default function RecordDetailPage() {
               <p className="mt-1 text-sm whitespace-pre-wrap">{record.memo}</p>
             </div>
           )}
+
+          {/* コピーボタン */}
+          {sharingContext.type === "shared" ? (
+            <button
+              type="button"
+              onClick={() => handleCopyRecord(undefined)}
+              disabled={copying}
+              className="w-full py-3 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 active:bg-emerald-800 transition-colors disabled:opacity-50 mt-2"
+            >
+              {copying ? "コピー中..." : "自分のDBにコピー"}
+            </button>
+          ) : copyTargets.length > 0 ? (
+            <div className="relative mt-2">
+              <button
+                type="button"
+                onClick={() => setShowCopyMenu(!showCopyMenu)}
+                disabled={copying}
+                className="w-full py-3 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 active:bg-emerald-800 transition-colors disabled:opacity-50"
+              >
+                {copying ? "コピー中..." : "共有先DBにコピー"}
+              </button>
+              {showCopyMenu && (
+                <div className="absolute bottom-full left-0 right-0 mb-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                  {copyTargets.map((share) => (
+                    <button
+                      key={share.id}
+                      type="button"
+                      onClick={() => handleCopyRecord(share.invitee_id)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    >
+                      {share.invitee_id.substring(0, 7)}... のDB
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
 
           <div className="flex gap-3 mt-4">
             <button
