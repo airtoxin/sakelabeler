@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 import { SakeForm } from "@/components/SakeForm";
 import { StarRating } from "@/components/StarRating";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { AuthGuard } from "@/components/AuthGuard";
 import { useStorage } from "@/components/StorageProvider";
 import { formatDate } from "@/lib/utils";
 import { getAlcoholTypeConfig } from "@/lib/alcohol-types";
@@ -65,28 +66,33 @@ export default function RecordDetailPage() {
 
   if (loading) {
     return (
+      <AuthGuard>
       <div className="min-h-screen bg-background">
         <Header title="読み込み中..." showBack />
         <div className="flex justify-center py-20">
           <div className="w-8 h-8 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
         </div>
       </div>
+      </AuthGuard>
     );
   }
 
   if (!record) {
     return (
+      <AuthGuard>
       <div className="min-h-screen bg-background">
         <Header title="エラー" showBack />
         <div className="px-4 py-20 text-center text-gray-500">
           記録が見つかりませんでした
         </div>
       </div>
+      </AuthGuard>
     );
   }
 
   if (editing) {
     return (
+      <AuthGuard>
       <div className="min-h-screen bg-background">
         <Header title="記録を編集" showBack />
         <main className="px-4 py-4 max-w-lg mx-auto">
@@ -104,10 +110,12 @@ export default function RecordDetailPage() {
           </button>
         </main>
       </div>
+      </AuthGuard>
     );
   }
 
   return (
+    <AuthGuard>
     <div className="min-h-screen bg-background">
       <Header title={record.name || "（名称未入力）"} showBack />
 
@@ -241,5 +249,6 @@ export default function RecordDetailPage() {
         />
       )}
     </div>
+    </AuthGuard>
   );
 }

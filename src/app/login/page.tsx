@@ -126,15 +126,6 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => router.push("/")}
-              className="text-sm text-gray-500 hover:underline"
-            >
-              ログインせずに使う
-            </button>
-          </div>
         </div>
       </main>
     </div>
