@@ -1,0 +1,34 @@
+name: Test Database Migrations
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/config.toml"
+      - ".github/workflows/test-migrations.yml"
+
+jobs:
+  test-migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+
+      - name: Check for destructive migrations
+        run: |
+          if grep -rEn "DROP TABLE|DROP COLUMN|TRUNCATE|DROP INDEX" supabase/migrations/ | grep -v "IF EXISTS"; then
+            echo "::error::破壊的なSQL文を検出しました。IF EXISTS を付けるか、安全性を確認してください。"
+            exit 1
+          fi
+
+      - name: Start Supabase local
+        run: supabase start
+
+      - name: Verify all migrations apply cleanly
+        run: supabase db reset
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop
