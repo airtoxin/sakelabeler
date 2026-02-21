@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/components/AuthProvider";
 import {
   inviteByUserId,
   revokeShare,
@@ -16,7 +16,7 @@ function shortenId(id: string): string {
 }
 
 export function ShareManagement() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user } = useAuth();
   const [myShares, setMyShares] = useState<DbShare[]>([]);
   const [sharedWithMe, setSharedWithMe] = useState<DbShare[]>([]);
   const [inviteeId, setInviteeId] = useState("");
@@ -33,24 +33,27 @@ export function ShareManagement() {
   useEffect(() => {
     let cancelled = false;
     async function init() {
-      const [{ data: { user } }, my, shared] = await Promise.all([
-        supabase.auth.getUser(),
-        getMyShares(),
-        getSharedWithMe(),
-      ]);
-      if (cancelled) return;
-      if (user) setUserId(user.id);
-      setMyShares(my);
-      setSharedWithMe(shared);
-      setLoading(false);
+      try {
+        const [my, shared] = await Promise.all([
+          getMyShares(),
+          getSharedWithMe(),
+        ]);
+        if (cancelled) return;
+        setMyShares(my);
+        setSharedWithMe(shared);
+      } catch {
+        // db_shares テーブルが未作成の場合など
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
     init();
     return () => { cancelled = true; };
   }, []);
 
   const handleCopyId = async () => {
-    if (!userId) return;
-    await navigator.clipboard.writeText(userId);
+    if (!user) return;
+    await navigator.clipboard.writeText(user.id);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -59,7 +62,7 @@ export function ShareManagement() {
     setError(null);
     const trimmed = inviteeId.trim();
     if (!trimmed) return;
-    if (trimmed === userId) {
+    if (trimmed === user?.id) {
       setError("自分自身は招待できません");
       return;
     }
@@ -104,7 +107,7 @@ export function ShareManagement() {
         </h2>
         <div className="flex items-center gap-2">
           <code className="flex-1 text-xs bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg break-all">
-            {userId}
+            {user?.id ?? "—"}
           </code>
           <button
             type="button"
