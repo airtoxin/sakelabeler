@@ -248,7 +248,11 @@ export default function RecordDetailPage() {
                 ) : null;
               })()}
             </div>
-            <StarRating value={record.rating} size="sm" />
+            {record.rating > 0 ? (
+              <StarRating value={record.rating} size="sm" />
+            ) : (
+              <span className="text-xs text-gray-400 dark:text-gray-500">未評価</span>
+            )}
             {record.tags && record.tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {record.tags.map((tag) => {

@@ -68,7 +68,7 @@ export function SakeForm({
   );
 
   const [date, setDate] = useState(initialValues?.date ?? todayString());
-  const [rating, setRating] = useState(initialValues?.rating ?? 3);
+  const [rating, setRating] = useState(initialValues?.rating ?? 0);
   const [memo, setMemo] = useState(initialValues?.memo ?? "");
   const [submitting, setSubmitting] = useState(false);
 
