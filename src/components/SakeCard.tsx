@@ -101,7 +101,11 @@ export function SakeCard({ record }: SakeCardProps) {
             </p>
           )}
           <div className="flex items-center justify-between mt-1">
-            <StarRating value={record.rating} size="sm" />
+            {record.rating > 0 ? (
+              <StarRating value={record.rating} size="sm" />
+            ) : (
+              <span className="text-xs text-gray-400 dark:text-gray-500">未評価</span>
+            )}
             <span className="text-xs text-gray-400 dark:text-gray-500">
               {formatDate(record.date)}
             </span>

@@ -17,7 +17,7 @@ export function StarRating({ value, onChange, size = "md" }: StarRatingProps) {
           key={star}
           type="button"
           disabled={!onChange}
-          onClick={() => onChange?.(star)}
+          onClick={() => onChange?.(star === value ? 0 : star)}
           className={`${onChange ? "cursor-pointer active:scale-110" : "cursor-default"} transition-transform`}
           aria-label={`${star}星`}
         >

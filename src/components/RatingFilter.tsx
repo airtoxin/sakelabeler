@@ -16,6 +16,8 @@ export function RatingFilter({ selectedRatings, onChange }: RatingFilterProps) {
     onChange(next);
   };
 
+  const unratedActive = selectedRatings.has(0);
+
   return (
     <div className="flex gap-1.5 flex-wrap">
       {[1, 2, 3, 4, 5].map((rating) => {
@@ -48,6 +50,19 @@ export function RatingFilter({ selectedRatings, onChange }: RatingFilterProps) {
           </button>
         );
       })}
+      <button
+        type="button"
+        onClick={() => toggle(0)}
+        className={`flex items-center gap-0.5 px-2 py-1 rounded-full text-xs font-medium border transition-colors ${
+          unratedActive
+            ? "bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/30 dark:border-amber-600 dark:text-amber-400"
+            : "bg-white border-gray-200 text-gray-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
+        }`}
+        aria-label="未評価で絞り込み"
+        aria-pressed={unratedActive}
+      >
+        未評価
+      </button>
     </div>
   );
 }
