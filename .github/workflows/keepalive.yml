@@ -1,0 +1,39 @@
+name: Supabase Keepalive
+
+on:
+  schedule:
+    - cron: "0 0 */3 * *" # 3日ごとにUTC 0:00に実行
+  workflow_dispatch:
+
+jobs:
+  count-records:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query total sake records
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/sake_records?select=count" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Prefer: count=exact" \
+            -H "Range: 0-0")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "HTTP status: $HTTP_CODE"
+          echo "Response: $BODY"
+
+          CONTENT_RANGE=$(curl -s -D - -o /dev/null \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/sake_records?select=count" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Prefer: count=exact" \
+            -H "Range: 0-0" | grep -i content-range)
+
+          echo "Total records: $CONTENT_RANGE"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "::error::Supabase query failed with status $HTTP_CODE"
+            exit 1
+          fi
