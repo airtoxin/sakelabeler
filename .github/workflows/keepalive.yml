@@ -20,12 +20,13 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
-      - name: Count total sake records
+      - name: Count total sake records via psql
         run: |
-          RESULT=$(supabase db execute \
-            --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} \
-            "SELECT COUNT(*) AS total_records FROM public.sake_records")
-          echo "$RESULT"
+          PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql \
+            -h "db.${SUPABASE_PROJECT_REF}.supabase.co" \
+            -U postgres \
+            -d postgres \
+            -c "SELECT COUNT(*) AS total_records FROM public.sake_records;"
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
