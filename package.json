@@ -24,7 +24,7 @@
     "@supabase/supabase-js": "^2.97.0",
     "exifreader": "^4.36.2",
     "leaflet": "^1.9.4",
-    "next": "16.1.6",
+    "next": "16.1.7",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-leaflet": "^5.0.0",
