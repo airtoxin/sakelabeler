@@ -46,7 +46,7 @@ async function addPhotos(page: Page) {
 }
 async function edit(page: Page) {
   await page.getByRole('button', { name: '編集する', exact: true }).tap();
-  await expect(page.getByLabel('醸造所名（任意）')).toBeVisible();
+  await expect(page.getByLabel('醸造所')).toBeVisible();
 }
 async function update(page: Page, name: string) {
   await page.getByRole('button', { name: '更新する', exact: true }).tap();
@@ -58,7 +58,7 @@ test('touch cover selection and brewery persist through Supabase SDK writes, det
   await login(page);
   await page.goto('/new');
   await page.getByLabel('お酒の名前').fill('検証用のお酒');
-  await page.getByLabel('醸造所名（任意）').fill('  自由な醸造所 A & B  ');
+  await page.getByLabel('醸造所').fill('  自由な醸造所 A & B  ');
   await page.getByLabel('お店の名前').fill('残す店舗');
   await page.getByLabel('メモ').fill('残すメモ');
   await addPhotos(page);
@@ -86,10 +86,10 @@ test('touch cover selection and brewery persist through Supabase SDK writes, det
   await expect(page.getByRole('region', { name: '写真', exact: true })).toContainText('2 / 2');
   await expect(page.getByText('自由な醸造所 A & B', { exact: true })).toBeVisible();
   await edit(page);
-  await expect(page.getByLabel('醸造所名（任意）')).toHaveValue('自由な醸造所 A & B');
+  await expect(page.getByLabel('醸造所')).toHaveValue('自由な醸造所 A & B');
   await expect(cover(page, 2)).toHaveAttribute('aria-pressed', 'true');
   await cover(page, 1).tap();
-  await page.getByLabel('醸造所名（任意）').fill('編集した醸造所');
+  await page.getByLabel('醸造所').fill('編集した醸造所');
   await page.screenshot({ path: testInfo.outputPath('edit-mobile.png'), fullPage: true, animations: 'disabled' });
   await update(page, '検証用のお酒');
   await expect(page.getByRole('region', { name: '写真', exact: true })).toContainText('1 / 2');
@@ -106,7 +106,7 @@ test('touch cover selection and brewery persist through Supabase SDK writes, det
   expect(backend.requests.filter(r => r.method === 'POST' && r.endpoint.startsWith('/storage/')).length).toBe(2);
   await edit(page);
   await cover(page, 2).tap();
-  await page.getByLabel('醸造所名（任意）').fill('取消する変更');
+  await page.getByLabel('醸造所').fill('取消する変更');
   await page.getByRole('button', { name: 'キャンセル', exact: true }).tap();
   await expect(page.getByText('編集した醸造所', { exact: true })).toBeVisible();
   await page.goto('/');
@@ -123,8 +123,8 @@ test('old records, brewery-only input, optional clear and DB copy keep brewery a
   await expect(page.getByRole('heading', { name: '旧記録', level: 2 })).toBeVisible();
   await expect(page.getByText('醸造所', { exact: true })).toHaveCount(0);
   await edit(page);
-  await expect(page.getByLabel('醸造所名（任意）')).toHaveValue('');
-  await page.getByLabel('醸造所名（任意）').fill('後から登録した蔵');
+  await expect(page.getByLabel('醸造所')).toHaveValue('');
+  await page.getByLabel('醸造所').fill('後から登録した蔵');
   await addPhotos(page);
   await cover(page, 2).tap();
   await update(page, '旧記録');
@@ -138,19 +138,50 @@ test('old records, brewery-only input, optional clear and DB copy keep brewery a
   const copiedPhotos = (await backend.db.query<PhotoRow>('SELECT * FROM sake_photos WHERE record_id=$1 ORDER BY sort_order', [copy.id])).rows;
   expect(copiedPhotos.map(photo => photo.is_cover)).toEqual([false, true]);
   await edit(page);
-  await page.getByLabel('醸造所名（任意）').fill('   ');
+  await page.getByLabel('醸造所').fill('   ');
   await update(page, '旧記録');
   await page.reload();
   await expect(page.getByRole('heading', { name: '旧記録', level: 2 })).toBeVisible();
   await expect(page.getByText('醸造所', { exact: true })).toHaveCount(0);
   expect((await backend.db.query<RecordRow>('SELECT brewery FROM sake_records WHERE id=$1', [old.id])).rows[0].brewery).toBe('');
   await page.goto('/new');
-  await page.getByLabel('醸造所名（任意）').fill('蔵だけの記録');
+  await page.getByLabel('醸造所').fill('蔵だけの記録');
   await page.getByRole('button', { name: '保存する', exact: true }).tap();
   await expect(page.getByText('醸造所：蔵だけの記録', { exact: true })).toBeVisible();
   const breweryOnly = (await backend.db.query<RecordRow>("SELECT * FROM sake_records WHERE brewery='蔵だけの記録'")).rows[0];
   expect(breweryOnly.name).toBe('');
   expect(breweryOnly.rating).toBe(0);
+});
+
+test('brewery and other fields can stay blank while the existing empty-record guard remains', async ({ page, backend }) => {
+  await login(page);
+  await page.goto('/new');
+  await expect(page.getByLabel('醸造所', { exact: true })).toHaveValue('');
+  await expect(page.locator('form [required]')).toHaveCount(0);
+  await page.getByLabel('日付', { exact: true }).fill('');
+  const save = page.getByRole('button', { name: '保存する', exact: true });
+  await expect(save).toBeDisabled();
+  await page.locator('form').evaluate(form => (form as HTMLFormElement).requestSubmit());
+  expect((await backend.db.query('SELECT id FROM sake_records')).rows).toEqual([]);
+
+  await page.getByLabel('メモ', { exact: true }).fill('メモだけの記録');
+  await expect(save).toBeEnabled();
+  await save.tap();
+  await expect(page).toHaveURL('http://127.0.0.1:4318/');
+  const { rows: [record] } = await backend.db.query<RecordRow>('SELECT * FROM sake_records');
+  expect(record).toMatchObject({
+    name: '', brewery: '', restaurant: '', origin: '', date: '',
+    alcohol_type: '', tags: [], rating: 0, memo: 'メモだけの記録',
+    location_lat: null, location_lng: null,
+  });
+  expect((await backend.db.query('SELECT id FROM sake_photos')).rows).toEqual([]);
+  await page.goto(`/${record.id}`);
+  await page.reload();
+  await edit(page);
+  await expect(page.getByLabel('醸造所', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('お酒の名前', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('日付', { exact: true })).toHaveValue('');
+  await expect(page.getByRole('textbox', { name: 'メモ', exact: true })).toHaveValue('メモだけの記録');
 });
 
 test('cover errors remain visible, photo loading blocks save, and replacement/removal persist', async ({ page, backend }) => {

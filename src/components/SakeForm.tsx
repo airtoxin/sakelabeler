@@ -135,7 +135,7 @@ export function SakeForm({
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium">醸造所名（任意）</span>
+        <span className="text-sm font-medium">醸造所</span>
         <input
           type="text"
           value={brewery}
