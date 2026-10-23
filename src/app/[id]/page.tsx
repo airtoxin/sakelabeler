@@ -149,6 +149,7 @@ export default function RecordDetailPage() {
       );
       const input: SakeRecordInput = {
         name: record.name,
+        brewery: record.brewery ?? "",
         photos,
         alcoholType: record.alcoholType,
         tags: record.tags,
@@ -271,6 +272,14 @@ export default function RecordDetailPage() {
           </div>
 
           <div className="flex flex-col gap-2 text-sm">
+            {record.brewery && (
+              <div className="flex gap-2">
+                <span className="text-gray-400 dark:text-gray-500 w-12 flex-shrink-0">
+                  醸造所
+                </span>
+                <span className="break-words min-w-0">{record.brewery}</span>
+              </div>
+            )}
             {record.restaurant && (
               <div className="flex gap-2">
                 <span className="text-gray-400 dark:text-gray-500 w-12 flex-shrink-0">

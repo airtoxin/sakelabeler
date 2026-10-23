@@ -9,6 +9,7 @@ create table sake_records (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   name text not null default '',
+  brewery text not null default '',
   alcohol_type text not null default '',
   tags text[] not null default '{}',
   restaurant text not null default '',

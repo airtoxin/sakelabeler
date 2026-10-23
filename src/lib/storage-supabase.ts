@@ -11,6 +11,7 @@ type DbRecord = {
   id: string;
   user_id: string;
   name: string;
+  brewery?: string;
   alcohol_type: string;
   tags: string[];
   restaurant: string;
@@ -89,6 +90,7 @@ export class SupabaseSakeStorage implements SakeStorage {
     return {
       id: row.id,
       name: row.name,
+      brewery: row.brewery ?? "",
       photos: photos
         .sort((a, b) => a.sort_order - b.sort_order)
         .map((p) => {
@@ -210,6 +212,7 @@ export class SupabaseSakeStorage implements SakeStorage {
       .insert({
         user_id: userId,
         name: input.name,
+        brewery: input.brewery ?? "",
         alcohol_type: input.alcoholType,
         tags: input.tags,
         restaurant: input.restaurant,
@@ -244,6 +247,7 @@ export class SupabaseSakeStorage implements SakeStorage {
     // Update record fields (excluding photos)
     const updateData: Record<string, unknown> = {};
     if (input.name !== undefined) updateData.name = input.name;
+    if (input.brewery !== undefined) updateData.brewery = input.brewery;
     if (input.alcoholType !== undefined)
       updateData.alcohol_type = input.alcoholType;
     if (input.tags !== undefined) updateData.tags = input.tags;
@@ -270,10 +274,11 @@ export class SupabaseSakeStorage implements SakeStorage {
     // Handle photo changes
     if (input.photos !== undefined) {
       // Get existing photos
-      const { data: existingPhotos } = await supabase
+      const { data: existingPhotos, error: photosError } = await supabase
         .from("sake_photos")
         .select("*")
         .eq("record_id", id);
+      if (photosError) throw photosError;
 
       const oldPhotos = (existingPhotos ?? []) as DbPhoto[];
 
@@ -294,14 +299,16 @@ export class SupabaseSakeStorage implements SakeStorage {
       );
       if (removedPhotos.length > 0) {
         const pathsToRemove = removedPhotos.map((p) => p.storage_path);
-        await supabase.storage.from("sake-photos").remove(pathsToRemove);
-        await supabase
+        const { error: storageError } = await supabase.storage.from("sake-photos").remove(pathsToRemove);
+        if (storageError) throw storageError;
+        const { error: deleteError } = await supabase
           .from("sake_photos")
           .delete()
           .in(
             "id",
             removedPhotos.map((p) => p.id)
           );
+        if (deleteError) throw deleteError;
       }
 
       // Update kept photos (isCover, sort_order may have changed)
@@ -315,7 +322,7 @@ export class SupabaseSakeStorage implements SakeStorage {
           // Existing photo — update metadata
           const storagePath = extractStoragePath(photo.url);
           if (storagePath) {
-            await supabase
+            const { error: updateError } = await supabase
               .from("sake_photos")
               .update({
                 is_cover: photo.isCover,
@@ -324,6 +331,7 @@ export class SupabaseSakeStorage implements SakeStorage {
                 gps_lng: photo.gpsLocation?.lng ?? null,
               })
               .eq("storage_path", storagePath);
+            if (updateError) throw updateError;
           }
         }
       }

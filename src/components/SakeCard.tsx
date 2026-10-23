@@ -62,6 +62,11 @@ export function SakeCard({ record }: SakeCardProps) {
               </span>
             )}
           </div>
+          {record.brewery && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">
+              醸造所：{record.brewery}
+            </p>
+          )}
           {record.tags && record.tags.length > 0 && (
             <div className="flex gap-1 mt-0.5 overflow-hidden">
               {record.tags.slice(0, 3).map((tag) => (

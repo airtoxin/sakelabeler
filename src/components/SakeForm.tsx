@@ -21,6 +21,7 @@ export function SakeForm({
   submitLabel = "保存する",
 }: SakeFormProps) {
   const [name, setName] = useState(initialValues?.name ?? "");
+  const [brewery, setBrewery] = useState(initialValues?.brewery ?? "");
   const [photos, setPhotos] = useState<SakePhoto[]>(
     initialValues?.photos ?? []
   );
@@ -71,17 +72,21 @@ export function SakeForm({
   const [rating, setRating] = useState(initialValues?.rating ?? 0);
   const [memo, setMemo] = useState(initialValues?.memo ?? "");
   const [submitting, setSubmitting] = useState(false);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const hasAnyInput =
-    name.trim() || photos.length > 0 || restaurant.trim() || origin.trim() || memo.trim() || location !== null;
+    name.trim() || brewery.trim() || photos.length > 0 || restaurant.trim() || origin.trim() || memo.trim() || location !== null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!hasAnyInput || submitting) return;
+    if (!hasAnyInput || submitting || photoProcessing) return;
     setSubmitting(true);
+    setError(null);
     try {
       await onSubmit({
         name: name.trim(),
+        brewery: brewery.trim(),
         photos,
         alcoholType,
         tags,
@@ -93,6 +98,8 @@ export function SakeForm({
         rating,
         memo: memo.trim(),
       });
+    } catch {
+      setError("保存できませんでした。もう一度お試しください。");
     } finally {
       setSubmitting(false);
     }
@@ -100,7 +107,14 @@ export function SakeForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <PhotoPicker value={photos} onChange={setPhotos} onLocationExtracted={handlePhotoLocationExtracted} onLocationSelect={handlePhotoLocationSelect} />
+      <PhotoPicker
+        value={photos}
+        onChange={setPhotos}
+        onLocationExtracted={handlePhotoLocationExtracted}
+        onLocationSelect={handlePhotoLocationSelect}
+        onProcessingChange={setPhotoProcessing}
+        disabled={submitting}
+      />
 
       <FlavorTagPicker
         alcoholType={alcoholType}
@@ -116,6 +130,17 @@ export function SakeForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="例：獺祭 純米大吟醸"
+          className="px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+        />
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium">醸造所名（任意）</span>
+        <input
+          type="text"
+          value={brewery}
+          onChange={(e) => setBrewery(e.target.value)}
+          placeholder="例：〇〇酒造"
           className="px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
         />
       </label>
@@ -170,12 +195,14 @@ export function SakeForm({
         />
       </label>
 
+      {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
+
       <button
         type="submit"
-        disabled={!hasAnyInput || submitting}
+        disabled={!hasAnyInput || submitting || photoProcessing}
         className="mt-2 py-3 rounded-lg bg-violet-600 text-white font-medium hover:bg-violet-700 active:bg-violet-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {submitting ? "保存中..." : submitLabel}
+        {submitting ? "保存中..." : photoProcessing ? "写真を読み込み中..." : submitLabel}
       </button>
     </form>
   );

@@ -9,7 +9,9 @@ type PhotoCarouselProps = {
 };
 
 export function PhotoCarousel({ photos, alt }: PhotoCarouselProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(() =>
+    Math.max(0, photos.findIndex((photo) => photo.isCover))
+  );
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 

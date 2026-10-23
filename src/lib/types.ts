@@ -14,6 +14,7 @@ export type Location = {
 export type SakeRecord = {
   id: string;
   name: string;
+  brewery?: string;
   photos: SakePhoto[];
   alcoholType: AlcoholType;
   tags: string[];
